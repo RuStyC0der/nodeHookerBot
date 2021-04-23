@@ -103,6 +103,7 @@ bot.onText(/\/unset_admin/, (msg) => {
     if (adminsSet.has(chatId)) {
 
         adminsSet.delete(chatId);
+        saveSet(adminsSet);
         bot.sendMessage(chatId, "admin removed");
 
     }else{
@@ -127,10 +128,10 @@ bot.onText(/\/start/, (msg) => {
     msg - is your message that will be displayed in bot message. 
 
     Example:
-    curl "http//<>?n=max&msg=test"
+    curl "http://<>?n=max&msg=test"
 
     Use case:
-    bash ./<very_long_task_or_script>.sh && curl "http//<>?n=max&msg=task_finished"
+    bash ./<very_long_task_or_script>.sh && curl "http://<>?n=max&msg=task_finished"
 
     Note that spaces is not allowed in query parameters, use '+' instead
     `);
