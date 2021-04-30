@@ -1,17 +1,20 @@
 
 const fs = require('fs');
-require('dotenv').config()
-
 const TelegramBot = require('node-telegram-bot-api');
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 8080
+const express = require('express');
+const doc = require('./doc');
+
+require('dotenv').config();
+
+const app = express();
+const port = process.env.PORT || 8080;
 
 const token = process.env.TOKEN || 'yourtoken';
 const adminPassword = process.env.ADMINPASS || "1234";
 
 const userFile = process.env.USERFILE || 'user.json';
 const adminFile = process.env.ADMINFILE || 'admins.json';
+const broadcastChannelId = process.env.BROADCASTCHATID
 
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {
@@ -114,28 +117,18 @@ bot.onText(/\/unset_admin/, (msg) => {
 bot.onText(/\/start/, (msg) => {
 
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, `
-    
-    How to use this bot:
-
-    First step, set your nickname using:
-    /set_nickname <nick>
-
-    Then you can use hooks, with wget, curl, e.g
-
-    Bot uses query parameters:
-    n - is your nickname, you can use nickname of another user, then this user will recieve message
-    msg - is your message that will be displayed in bot message. 
-
-    Example:
-    curl "http://<>?n=max&msg=test"
-
-    Use case:
-    bash ./<very_long_task_or_script>.sh && curl "http://<>?n=max&msg=task_finished"
-
-    Note that spaces is not allowed in query parameters, use '+' instead
-    `);
+    bot.sendMessage(chatId, doc.startupMessage);
 });
+
+bot.onText(/\/help/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, doc.startupMessage + "\n" + doc.commandReference);
+});
+
+bot.onText(/\/ping/, (msg) => {
+  const chatId = msg.chat.id;
+  bot.sendMessage(chatId, "pong!");
+})
 
 function notifyAdminsSet(nickname, msg){
     for (let admin of adminsSet) {
@@ -153,8 +146,24 @@ app.get('/', (req, res) => {
 
   console.log(n, msg);
 
-  if (clientsMap.has(n)){
+  if (msg === undefined){
+    res.status(422).send("incorrect query format\n");
+    return;
+  }
 
+  if ((msg) && (!n)){
+    if ( broadcastChannelId === undefined){
+      res.status(506).send("broadcast channel misconfigured, request will be rejected\n");
+      return;
+    }
+
+    bot.sendMessage(broadcastChannelId, msg);
+    res.status(200).send("OK\n");
+    return;
+  }
+
+
+  if (clientsMap.has(n)){
     notifyUser(n, msg);
     notifyAdminsSet(n, msg);
     res.status(200).send('OK\n');
